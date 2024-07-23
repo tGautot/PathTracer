@@ -30,7 +30,7 @@ public:
         if(scatterDir.near_zero())
             scatterDir = hr.normal;
 
-        rayOut = ray(hr.p, scatterDir);
+        rayOut = ray(hr.p, scatterDir, rayIn.time());
         attenuation = albedo;
         return true;
     }
@@ -54,7 +54,7 @@ public:
 
      
 
-        rayOut = ray(hr.p, scatterDir);
+        rayOut = ray(hr.p, scatterDir, rayIn.time());
         attenuation = albedo;
         return dot(scatterDir, hr.normal) > 0;
     }
@@ -88,7 +88,7 @@ public:
         }
 
 
-        rayOut = ray(hr.p, scatterDir);
+        rayOut = ray(hr.p, scatterDir, rayIn.time());
 
         return true;
     }    

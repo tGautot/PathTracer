@@ -7,7 +7,7 @@
 
 class sphere : public hittable{
 public:
-    const point3 center;
+    point3 center;
     double radius;
     shared_ptr<material> mat;
 
@@ -54,5 +54,7 @@ public:
 
     }
 };
+
+
 
 #endif

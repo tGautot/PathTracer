@@ -87,7 +87,7 @@ private:
         point3 rayOrigin = cameraPos;
         if(defocusAngle > EPSILON)
             rayOrigin = sample_defocus_disk();
-        ray r = ray(rayOrigin, pixLoc + pixOffset - rayOrigin);
+        ray r = ray(rayOrigin, pixLoc + pixOffset - rayOrigin, randDouble());
         return r;
     }
 

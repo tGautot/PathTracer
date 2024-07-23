@@ -4,25 +4,10 @@
 #include "sphere.h"
 #include "camera.h"
 #include "material.h"
+#include "animated.h"
 
 
-
-
-
-int main(){
-    
-    /*auto materialGround = make_shared<lambertian>(color(0.8,0.8,0.0));
-    auto materialCenter = make_shared<lambertian>(color(0.1,0.2,0.5));
-    auto materialLeft   = make_shared<dielectric>(1.5);
-    auto materialRight  = make_shared<metal>(color(0.8,0.6,0.2), 0.9);
-    auto materialBubble = make_shared<dielectric>(1.0/1.5);
-
-    world.add(make_shared<sphere>(point3(0,-100.5,-1), 100, materialGround));
-    world.add(make_shared<sphere>(point3(0,0,1.2), 0.5, materialCenter));
-    world.add(make_shared<sphere>(point3(-1,0,1.0), 0.5, materialLeft));
-    world.add(make_shared<sphere>(point3(-1,0,1.0), 0.4, materialBubble));
-    world.add(make_shared<sphere>(point3(1,0,1.0), 0.5, materialRight));*/
-
+void complex_scene(){
     hittable_list world;
 
     auto ground_material = make_shared<lambertian>(color(0.5, 0.5, 0.5));
@@ -73,4 +58,51 @@ int main(){
     cam.render(world);
    
     std::clog << "\n\rDone done.                                     \n";
+}
+
+
+void center_sphere_move(double t, sphere& _base){
+    _base.center[2] += (t-0.5)*2;
+}
+
+void simple_scene() {
+    hittable_list world;
+    
+    auto materialGround = make_shared<lambertian>(color(0.8,0.8,0.0));
+    auto materialCenter = make_shared<lambertian>(color(0.1,0.2,0.5));
+    auto materialLeft   = make_shared<dielectric>(1.5);
+    auto materialRight  = make_shared<metal>(color(0.8,0.6,0.2), 0.9);
+    auto materialBubble = make_shared<dielectric>(1.0/1.5);
+
+    auto center_sphere = make_shared<animated<sphere>>(center_sphere_move, sphere(point3(0,0,1.2), 0.5, materialCenter));
+
+    world.add(make_shared<sphere>(point3(0,-100.5,-1), 100, materialGround));
+    world.add(center_sphere);
+    world.add(make_shared<sphere>(point3(-1.1,0,1.0), 0.5, materialLeft));
+    world.add(make_shared<sphere>(point3(-1.1,0,1.0), 0.4, materialBubble));
+    world.add(make_shared<sphere>(point3(1.1,0,1.0), 0.5, materialRight));
+
+    camera cam;
+    cam.aspectRatio = 16.0/9.0;
+    cam.imgWidth = 400;
+    cam.samplesPerPixel = 1000;
+    cam.maxRayBounce = 20;
+    cam.vertFOV = 40.0;
+    cam.focusDist = 3.4;
+    cam.defocusAngle = 1;
+
+    cam.lookfrom = point3(-2,2,-1);
+    cam.lookat   = point3(0,0,1.2);
+    cam.vup      = vec3(0,1,0);
+
+    cam.render(world);
+   
+    std::clog << "\n\rDone done.                                     \n";
+
+}
+
+int main(){
+
+    simple_scene();
+    
 }
