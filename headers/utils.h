@@ -16,6 +16,11 @@ const double infinity = std::numeric_limits<double>::infinity();
 const double PI = 3.1415926535897932385;
 const double EPSILON = 1e-8;
 
+inline void swap(double* a, double* b){
+    double tmp = *a;
+    *a = *b;
+    *b = tmp;
+}
 
 inline double degsToRads(double deg){
     return deg * PI / 180.0;
@@ -31,6 +36,10 @@ inline double randDouble(){
 
 inline double randDouble(double min, double max){
     return min + randDouble()*(max-min);
+}
+
+inline int rand_int(int min, int max){
+    return min + rand()%(max-min);
 }
 
 

@@ -44,6 +44,10 @@ public:
         return length_squared() < EPSILON;
     }
 
+    std::ostream& to_stream(std::ostream& out) const{
+        return out << "(" << e[0] << ", " << e[1] << ", " << e[2] << ") ";
+    }
+
     vec3 operator-() const {return vec3(-e[0], -e[1], -e[2]);}
     double operator[](int i) const {return e[i];}
     double& operator[](int i) {return e[i];}

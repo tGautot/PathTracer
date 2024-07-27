@@ -3,6 +3,7 @@
 
 #include "common.h"
 #include "hittable.h"
+#include "texture.h"
 
 
 class material {
@@ -19,10 +20,11 @@ public:
 
 class lambertian : public material {
 private:
-    color albedo;
+    shared_ptr<texture> albedo;
 
 public:
-    lambertian(const color& albedo): albedo(albedo){}
+    lambertian(color  albedo): albedo(make_shared<solid_color_tex>(albedo)){}
+    lambertian(shared_ptr<texture> tex): albedo(tex){}
 
     bool scatter(const ray& rayIn, hit_record& hr, color& attenuation, ray& rayOut) const override{
         vec3 scatterDir = hr.normal + vec3::random_on_unit_sphere();
@@ -31,7 +33,7 @@ public:
             scatterDir = hr.normal;
 
         rayOut = ray(hr.p, scatterDir, rayIn.time());
-        attenuation = albedo;
+        attenuation = albedo->value(hr.u,hr.v,hr.p);
         return true;
     }
 

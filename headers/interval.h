@@ -9,6 +9,10 @@ public:
 
     interval(): min(+infinity), max(-infinity){}
     interval(double l, double u): min(l), max(u){}
+    interval(const interval& a, const interval& b) {
+        min = a.min <= b.min ? a.min : b.min;
+        max = a.max >= b.max ? a.max : b.max;
+    }
 
     bool contains(double x){
         return min <= x && x <= max;
@@ -22,6 +26,15 @@ public:
         if(x < min) return min;
         if(x > max) return max;
         return x;
+    }
+
+    interval expand(double delta){
+        double pad = delta/2.0;
+        return interval(min-pad, max+pad);
+    }
+
+    inline double size() const{
+        return max-min;
     }
 
     static const interval empty, universe;

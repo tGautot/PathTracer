@@ -4,17 +4,25 @@
 #include "common.h"
 #include "hittable.h"
 #include "material.h"
+#include "time_profiler.h"
 
 class sphere : public hittable{
+private:
+    aabb bbox;
 public:
     point3 center;
     double radius;
     shared_ptr<material> mat;
 
-    sphere(const point3 c, double r, shared_ptr<material> m): 
-        center(c), radius(r), mat(m) {}
+    sphere(const point3 c, double r, shared_ptr<material> m): center(c), radius(r), mat(m) {
+        bbox = aabb(center - radius*vec3(1,1,1), center + radius*vec3(1,1,1));
+    }
     //sphere(const point3& c, double r, shared_ptr<material> m): 
     //    center(c), radius(r), mat(m) {}
+
+    aabb bounding_box() const override {
+        return bbox;
+    }
 
     bool hit(const ray& r, interval t_int, hit_record& hr) const{
         // axx + bx + c
@@ -25,15 +33,17 @@ public:
         double c = dot(toSphereDir, toSphereDir) - radius*radius;
         double delta = h*h - a*c;
         
-        if(delta < 0)
+        if(delta < 0){ 
             return false;
+        }
 
         double sqrtDelta = sqrt(delta);
         double root = (h - sqrtDelta)/a;
         if(!t_int.surrounds(root)){
             root = (h+sqrtDelta)/a;
-            if(!t_int.surrounds(root))
+            if(!t_int.surrounds(root)){
                 return false;
+            }
         }
 
         hr.t = root;
@@ -48,7 +58,7 @@ public:
             hr.front_face = true;
         }
         hr.mat = mat;
-        
+
         return true; 
 
 

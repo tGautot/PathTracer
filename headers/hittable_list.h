@@ -3,10 +3,13 @@
 
 #include "common.h"
 #include "hittable.h"
-
+#include "aabb.h"
 #include <vector>
 
 class hittable_list : public hittable {
+private:
+    aabb bbox;
+
 public:
     std::vector<shared_ptr<hittable>> objs;
 
@@ -16,6 +19,7 @@ public:
     void clear(){ objs.clear(); }
     void add(shared_ptr<hittable> obj){
         objs.push_back(obj);
+        bbox = aabb(bbox, obj->bounding_box());
     }
 
     bool hit(const ray& r, interval t_int, hit_record& hr) const {
@@ -32,6 +36,10 @@ public:
         }
 
         return hitAnything;
+    }
+
+    aabb bounding_box() const override {
+        return bbox;
     }
 };
 

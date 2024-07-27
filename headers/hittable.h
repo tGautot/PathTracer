@@ -2,7 +2,7 @@
 #define HITTABLE_H
 
 #include "common.h"
-
+#include "aabb.h"
 
 class material;
 
@@ -11,6 +11,7 @@ public:
     point3 p;
     vec3 normal;
     double t;
+    double u, v;
     bool front_face;
     shared_ptr<material> mat;
 };
@@ -20,6 +21,8 @@ public:
     virtual ~hittable() = default;
 
     virtual bool hit(const ray& r, interval t_int, hit_record& hr) const = 0;
+
+    virtual aabb bounding_box() const = 0;
 };
 
 
