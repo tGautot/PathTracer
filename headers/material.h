@@ -11,10 +11,13 @@ public:
 
     virtual ~material() = default;
 
+    virtual color emitted(double u, double v, const point3& p) const {
+        return color(0,0,0);
+    }
+
     virtual bool scatter(const ray& rayIn, hit_record& hr, color& attenuation, ray& rayOut) const{
         return false;
     }
-
 };
 
 
@@ -61,6 +64,8 @@ public:
         return dot(scatterDir, hr.normal) > 0;
     }
 
+
+
 };
 
 
@@ -102,6 +107,25 @@ private:
         r0 = r0*r0;
         return r0 + (1-r0)*pow((1 - cosine),5);
     }
+
+
+};
+
+class emissive_mat : public material {
+private:
+    shared_ptr<texture> tex;
+    double intensity;
+public:
+
+    emissive_mat(shared_ptr<texture> tex, double intensity=1.0): tex(tex), intensity(intensity) {}
+    emissive_mat(const color& col, double intensity=1.0): tex(make_shared<solid_color_tex>(col)), intensity(intensity) {}
+
+    color emitted(double u, double v, const point3& p) const override{
+        return tex->value(u,v,p)*intensity;
+    }
+
+
+
 };
 
 

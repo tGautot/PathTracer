@@ -22,6 +22,8 @@ public:
     point3 at(double t) const{
         return orig + t*dir;
     }
+    friend std::ostream& operator<<(std::ostream& out, const ray& r);
 };
+
 
 #endif

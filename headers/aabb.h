@@ -22,6 +22,12 @@ public:
         z = interval(box0.z, box1.z);
     }
 
+    void expand(double delta = 0.001){
+        x.expand(delta);
+        y.expand(delta);
+        z.expand(delta);
+    }
+
     interval axis_interval(int n) const{
         if(n == 1) return y;
         if(n == 2) return z;

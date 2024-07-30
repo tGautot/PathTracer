@@ -50,3 +50,7 @@ vec3 vec3::project(const vec3& onto) const{
 vec3 vec3::reflect(const vec3& nrml) const {
     return *this - 2.0*project(nrml);
 }
+
+std::ostream& operator<<(std::ostream& out, const vec3& r){
+    return out << "["<< r.x() << "," << r.y() << "," << r.z() << "]";   
+}
