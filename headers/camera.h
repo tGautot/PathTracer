@@ -3,6 +3,9 @@
 
 #include "hittable.h"
 #include "common.h"
+#include "texture.h"
+
+#include <memory>
 
 class camera{
 public:
@@ -15,6 +18,8 @@ public:
     double vertFOV = 90.0;
     double defocusAngle = 0.0;
     double focusDist = 10;
+
+    shared_ptr<texture> skybox;
 
     point3 lookfrom = point3(0,0,0);
     point3 lookat = point3(0,0,1);
@@ -51,6 +56,7 @@ private:
     vec3 u,v,w;
     vec3 defocusDiskU, defocusDiskV;
 
+public:
     void initialize(){
         imgHeight = int(double(imgWidth)/aspectRatio);
         imgHeight = (imgHeight < 1) ? 1 : imgHeight;
@@ -98,20 +104,27 @@ private:
 
     color ray_color(const ray& r, const hittable& world, int bouncesLeft){
         hit_record hr;
-        if(bouncesLeft < 0)
+        if(bouncesLeft < 0){
+            //std::clog << "RAY RAN OUT OF BOUNCES" << std::endl;
             return color(0,0,0);
+        }
         if (world.hit(r, interval(0.001, infinity), hr)){
             ray scattered;
             color attenuation;
-            if(hr.mat->scatter(r, hr, attenuation, scattered))
-                return attenuation*ray_color(scattered, world, bouncesLeft-1);
-            return color(0,0,0);
+            color emitted = hr.mat->emitted(hr.u, hr.v, hr.p);
+            if(hr.mat->scatter(r, hr, attenuation, scattered)){
+                //std::clog << "hit color is " << attenuation << std::endl;
+                return emitted + attenuation*ray_color(scattered, world, bouncesLeft-1);
+            }
+            //std::clog << "RAY DIDNT SCATTER" << std::endl;
+            return emitted;
         }
             
-
-        vec3 n = vec3(r.direction()).normalized();
-        double a = (n.y()+1.0)*0.5;
-        return a*color(1,1,1) + (1-a)*color(0.5,0.7,1);
+        //std::clog << "RAY HIT SKYBOX" << std::endl;
+        vec3 n = r.direction().normalized();
+        double u, v;
+        sphere::get_sphere_uv(n, u, v);
+        return skybox->value(u, v, n);
     }
 
 };

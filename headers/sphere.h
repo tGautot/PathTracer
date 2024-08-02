@@ -48,16 +48,10 @@ public:
 
         hr.t = root;
         hr.p = r.at(root);
-        hr.normal = (hr.p - center) / radius;
-        get_sphere_uv(hr.normal,hr.u,hr.v);
         
-        if(dot(hr.normal, r.direction()) > 0.0){
-            // ray is inside the sphere
-            hr.front_face = false;
-            hr.normal = - hr.normal;    
-        } else {
-            hr.front_face = true;
-        }
+        get_sphere_uv(hr.normal,hr.u,hr.v);
+        vec3 outnorm = (hr.p - center) / radius;
+        hr.set_frontface_and_normal(r, outnorm);
         hr.mat = mat;
 
         return true; 
