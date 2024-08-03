@@ -16,7 +16,7 @@ public:
     hittable_list(){}
     hittable_list(shared_ptr<hittable> obj) {add(obj);}
 
-    void clear(){ objs.clear(); }
+    void clear(){ objs.clear(); bbox = aabb(); }
     void add(shared_ptr<hittable> obj){
         objs.push_back(obj);
         bbox = aabb(bbox, obj->bounding_box());

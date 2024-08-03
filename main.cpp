@@ -8,6 +8,7 @@
 #include "bvh.h"
 #include "time_profiler.h"
 #include "shape2d.h"
+#include "box.h"
 
 void complex_scene(){
     hittable_list world;
@@ -239,12 +240,19 @@ void cornell_box(){
     world.add(make_shared<quad>(point3(555,555,555), vec3(-555,0,0), vec3(0,0,-555), white));
     world.add(make_shared<quad>(point3(0,0,555), vec3(555,0,0), vec3(0,555,0), white));
 
+    auto box1 = make_shared<box>(point3(130, 0, 65), point3(295, 165, 230), white);
+    box1->rotate(0,15,0);
+    world.add(box1);
+    auto box2 = make_shared<box>(point3(265, 0, 295), point3(430, 330, 460), white);
+    box2->rotate(0,-18,0);
+    world.add(box2);
+
     camera cam;
 
     cam.aspectRatio      = 1.0;
-    cam.imgWidth       = 600;
-    cam.samplesPerPixel = 300;
-    cam.maxRayBounce         = 100;
+    cam.imgWidth       = 400;
+    cam.samplesPerPixel = 100;
+    cam.maxRayBounce         = 50;
 
     auto skybox_tex = make_shared<solid_color_tex>(0.0,0.0,0.0);
     cam.skybox = skybox_tex;
