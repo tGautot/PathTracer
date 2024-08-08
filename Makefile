@@ -1,5 +1,5 @@
 
-CFLAGS=-g
+CFLAGS=-g -fopenmp
 INCLUDES=-Iheaders -Iexternal
 
 clear:

@@ -9,6 +9,7 @@
 #include "time_profiler.h"
 #include "shape2d.h"
 #include "box.h"
+#include "constant_medium.h"
 
 void complex_scene(){
     hittable_list world;
@@ -241,17 +242,17 @@ void cornell_box(){
     world.add(make_shared<quad>(point3(0,0,555), vec3(555,0,0), vec3(0,555,0), white));
 
     auto box1 = make_shared<box>(point3(130, 0, 65), point3(295, 165, 230), white);
-    box1->rotate(0,15,0);
+    box1->rotate(0,-15,0);
     world.add(box1);
     auto box2 = make_shared<box>(point3(265, 0, 295), point3(430, 330, 460), white);
-    box2->rotate(0,-18,0);
+    box2->rotate(0,18,0);
     world.add(box2);
 
     camera cam;
 
     cam.aspectRatio      = 1.0;
-    cam.imgWidth       = 400;
-    cam.samplesPerPixel = 100;
+    cam.imgWidth       = 600;
+    cam.samplesPerPixel = 300;
     cam.maxRayBounce         = 50;
 
     auto skybox_tex = make_shared<solid_color_tex>(0.0,0.0,0.0);
@@ -274,11 +275,142 @@ void cornell_box(){
 
 }
 
+
+void fognell_box(){
+    hittable_list world;
+
+    auto red   = make_shared<lambertian>(color(.65, .05, .05));
+    auto white = make_shared<lambertian>(color(.73, .73, .73));
+    auto green = make_shared<lambertian>(color(.12, .45, .15));
+    auto light = make_shared<emissive_mat>(color(15, 15, 15));
+
+    world.add(make_shared<quad>(point3(555,0,0), vec3(0,555,0), vec3(0,0,555), green));
+    world.add(make_shared<quad>(point3(0,0,0), vec3(0,555,0), vec3(0,0,555), red));
+    world.add(make_shared<quad>(point3(343, 554, 332), vec3(-130,0,0), vec3(0,0,-105), light));
+    world.add(make_shared<quad>(point3(0,0,0), vec3(555,0,0), vec3(0,0,555), white));
+    world.add(make_shared<quad>(point3(555,555,555), vec3(-555,0,0), vec3(0,0,-555), white));
+    world.add(make_shared<quad>(point3(0,0,555), vec3(555,0,0), vec3(0,555,0), white));
+
+    auto box1 = make_shared<box>(point3(130, 0, 65), point3(295, 165, 230), white);
+    box1->rotate(0,-15,0);
+    
+    auto box2 = make_shared<box>(point3(265, 0, 295), point3(430, 330, 460), white);
+    box2->rotate(0,18,0);
+    
+    world.add(make_shared<constant_medium>(box1, 0.01, color(0,0,0)));
+    world.add(make_shared<constant_medium>(box2, 0.01, color(1,1,1)));
+
+    camera cam;
+
+    cam.aspectRatio      = 1.0;
+    cam.imgWidth       = 600;
+    cam.samplesPerPixel = 200;
+    cam.maxRayBounce         = 50;
+
+    auto skybox_tex = make_shared<solid_color_tex>(0.0,0.0,0.0);
+    cam.skybox = skybox_tex;
+
+    cam.vertFOV     = 40;
+
+    cam.lookfrom = point3(278, 278, -800);
+    cam.lookat   = point3(278, 278, 0);
+    cam.vup      = vec3(0,1,0);
+
+    cam.defocusAngle = 0;
+
+    cam.render(world);
+    /*cam.initialize();
+    ray r = cam.get_ray(300, 515);
+    hit_record hr;
+    std::clog << "Sending Ray " << r << std::endl;
+    std::clog << "Final Ray color is " << cam.ray_color(r, world, 50) << std::endl; */
+
+}
+
+
+void final_scene(int image_width, int samples_per_pixel, int max_depth) {
+    hittable_list boxes1;
+    auto ground = make_shared<lambertian>(color(0.48, 0.83, 0.53));
+
+    int boxes_per_side = 20;
+    for (int i = 0; i < boxes_per_side; i++) {
+        for (int j = 0; j < boxes_per_side; j++) {
+            auto w = 100.0;
+            auto x0 = -1000.0 + i*w;
+            auto z0 = -1000.0 + j*w;
+            auto y0 = 0.0;
+            auto x1 = x0 + w;
+            auto y1 = randDouble(1,101);
+            auto z1 = z0 + w;
+
+            boxes1.add(make_shared<box>(point3(x0,y0,z0), point3(x1,y1,z1), ground));
+        }
+    }
+
+    hittable_list world;
+
+    world.add(make_shared<bvh_node>(boxes1));
+
+    auto light = make_shared<emissive_mat>(color(7, 7, 7));
+    world.add(make_shared<quad>(point3(123,554,147), vec3(300,0,0), vec3(0,0,265), light));
+
+    auto center1 = point3(400, 400, 200);
+    auto center2 = center1 + vec3(30,0,0);
+    auto sphere_material = make_shared<lambertian>(color(0.7, 0.3, 0.1));
+    world.add(make_shared<sphere>(center1, 50, sphere_material));
+
+    world.add(make_shared<sphere>(point3(260, 150, 45), 50, make_shared<dielectric>(1.5)));
+    world.add(make_shared<sphere>(
+        point3(0, 150, 145), 50, make_shared<metal>(color(0.8, 0.8, 0.9), 1.0)
+    ));
+
+    auto boundary = make_shared<sphere>(point3(360,150,145), 70, make_shared<dielectric>(1.5));
+    world.add(boundary);
+    world.add(make_shared<constant_medium>(boundary, 0.2, color(0.2, 0.4, 0.9)));
+    boundary = make_shared<sphere>(point3(0,0,0), 5000, make_shared<dielectric>(1.5));
+    world.add(make_shared<constant_medium>(boundary, .0001, color(1,1,1)));
+
+    auto emat = make_shared<lambertian>(make_shared<image_tex>("images/earthmap.jpg"));
+    world.add(make_shared<sphere>(point3(400,200,400), 100, emat));
+    auto pertext = make_shared<noise_tex>(0.2);
+    world.add(make_shared<sphere>(point3(220,280,300), 80, make_shared<lambertian>(pertext)));
+
+    hittable_list boxes2;
+    auto white = make_shared<lambertian>(color(.73, .73, .73));
+    int ns = 1000;
+    for (int j = 0; j < ns; j++) {
+        boxes2.add(make_shared<sphere>(point3::random(0,165) + vec3(-100,270,395), 10, white));
+    }
+    world.add(make_shared<bvh_node>(boxes2));
+    camera cam;
+
+    cam.aspectRatio      = 1.0;
+    cam.imgWidth       = image_width;
+    cam.samplesPerPixel = samples_per_pixel;
+    cam.maxRayBounce         = max_depth;
+    
+    auto skybox = make_shared<solid_color_tex>(color(0,0,0));
+    cam.skybox        = skybox;
+
+    cam.vertFOV     = 40;
+    cam.lookfrom = point3(478, 278, -600);
+    cam.lookat   = point3(278, 278, 0);
+    cam.vup      = vec3(0,1,0);
+
+    cam.defocusAngle = 0;
+
+    cam.render(world);
+}
+
+
+
 int main(){
     srand(time(NULL));
     prfl::create_profile(WHOLE_EXEC, "runtime");
     prfl::start_profiling_segment(WHOLE_EXEC);
+    
     cornell_box();
+    //final_scene(800, 10000, 40);
     prfl::end_profiling_segment(WHOLE_EXEC);
     prfl::print_full_profiler_info();
 }

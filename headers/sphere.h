@@ -2,19 +2,19 @@
 #define SPHERE_H
 
 #include "common.h"
+#include "transform.h"
 #include "hittable.h"
 #include "material.h"
 #include "time_profiler.h"
 
-class sphere : public hittable{
+class sphere : public hittable, public transform{
 private:
     aabb bbox;
 public:
-    point3 center;
     double radius;
     shared_ptr<material> mat;
 
-    sphere(const point3 c, double r, shared_ptr<material> m): center(c), radius(r), mat(m) {
+    sphere(const point3 c, double r, shared_ptr<material> m): transform(c), radius(r), mat(m) {
         bbox = aabb(center - radius*vec3(1,1,1), center + radius*vec3(1,1,1));
     }
     //sphere(const point3& c, double r, shared_ptr<material> m): 

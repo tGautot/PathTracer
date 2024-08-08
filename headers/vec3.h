@@ -18,6 +18,12 @@ public:
     double y() const {return e[1];}
     double z() const {return e[2];}
 
+    void set(const vec3& v){
+        e[0] = v.e[0];
+        e[1] = v.e[1];
+        e[2] = v.e[2];
+    }
+
     static vec3 random(){
         return vec3(randDouble(-1,1), randDouble(-1,1), randDouble(-1,1));
     }
@@ -35,6 +41,8 @@ public:
     static vec3 random_in_unit_circle(); // .cpp
 
     static vec3 random_in_hemisphere(const vec3& normal); // .cpp
+
+    static vec3 random_on_hemisphere(const vec3& normal); // .cpp
 
     vec3 project(const vec3& onto) const; // .cpp
 
@@ -128,6 +136,10 @@ inline vec3 operator*(double t, const vec3& v){
 
 inline vec3 operator/(const vec3& v, double t){
     return v*(1/t);
+}
+
+inline bool operator==(const vec3& v1, const vec3& v2){
+    return std::fabs(v1.x() - v2.x()) < EPSILON && std::fabs(v1.y() - v2.y()) < EPSILON && std::fabs(v1.z() - v2.z()) < EPSILON;
 }
 
 inline vec3 project(const vec3& v, const vec3& onto){

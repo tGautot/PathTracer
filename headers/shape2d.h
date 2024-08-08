@@ -1,18 +1,19 @@
 #ifndef QUADS_H
 #define QUADS_H
 
+#include "transform.h"
 #include "hittable.h"
 #include "aabb.h"
 
 
 // abstract class for all 2D shapes
-class planar_shape: public hittable {
+class planar_shape: public hittable, public transform {
 
 protected:
     // parallelogram defined by the plane spanned by vec u and v
     // when originating a orig
-    point3 q;
-    vec3 u, v;
+    point3 &q = get_center();
+    vec3 &u = get_basis(0), &v = get_basis(1), &n = get_basis(2);
     
     vec3 normal;
 
@@ -21,12 +22,28 @@ protected:
 
 public:
 
-    planar_shape(point3 q, vec3 u, vec3 v): q(q), u(u), v(v){
-        vec3 n = cross(u,v);
+    planar_shape(point3 q, vec3 uvec, vec3 vvec): transform(q){
+        u.set(uvec); v.set(vvec);
+        n = cross(u,v);
         normal = n.normalized();
         D = dot(q, normal);
         w = n / dot(n,n);
     }
+
+    void translate(const vec3& offset)  {
+        transform::translate(offset);
+        D = dot(q, normal);
+    }
+
+    void rotate_around(double degX, double degY, double degZ, const point3& pivot) {
+        transform::rotate_around(degX, degY, degZ, pivot);
+        w = n / dot(n,n);
+        
+        // Should not be needed, but might be worth putting it in when debugging
+        // normal = n.normalized();
+    }
+
+
 
     void planar_coordinates(const point3& p, double* alpha, double* beta) const {
         by_vector_formula(p, alpha, beta);

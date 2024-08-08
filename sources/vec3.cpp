@@ -50,12 +50,21 @@ vec3 vec3::random_in_unit_circle(){
 }
 
 vec3 vec3::random_in_hemisphere(const vec3& normal){
-    vec3 v = random();
+    vec3 v = random_in_unit_sphere();
     if(dot(v, normal) < 0){
         v = -v;
     }
 
-    return v.normalized();
+    return v;
+}
+
+vec3 vec3::random_on_hemisphere(const vec3& normal){
+    vec3 v = random_on_unit_sphere();
+    if(dot(v, normal) < 0){
+        v = -v;
+    }
+
+    return v;
 }
 
 vec3 vec3::project(const vec3& onto) const{
