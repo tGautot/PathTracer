@@ -80,7 +80,7 @@ void complex_scene(){
     cam.lookat   = point3(0,0,1.2);
     cam.vup      = vec3(0,1,0);
 
-    cam.render(world);
+    cam.render(world, nullptr);
    
     std::clog << "\n\rDone done.                                     \n";
 }
@@ -122,7 +122,7 @@ void simple_scene() {
     cam.lookat   = point3(0,0,1.2);
     cam.vup      = vec3(0,1,0);
 
-    cam.render(world);
+    cam.render(world, nullptr);
    
     std::clog << "\n\rDone done.                                     \n";
 
@@ -148,7 +148,7 @@ void extra_simple_scene(){
     cam.lookat   = point3(0,0,1.2);
     cam.vup      = vec3(0,1,0);
 
-    cam.render(world);
+    cam.render(world, nullptr);
    
 }
 
@@ -187,7 +187,7 @@ void quad_scene() {
     cam.lookat   = point3(0,0,0);
     cam.vup      = vec3(0,1,0);
 
-    cam.render(world);
+    cam.render(world, nullptr);
     //cam.initialize();
     //ray r = cam.get_ray(200, 200);
     //hit_record hr;
@@ -223,7 +223,7 @@ void simple_light() {
     cam.vup      = vec3(0,1,0);
 
 
-    cam.render(world);
+    cam.render(world, nullptr);
 }
 
 void cornell_box(){
@@ -236,7 +236,8 @@ void cornell_box(){
 
     world.add(make_shared<quad>(point3(555,0,0), vec3(0,555,0), vec3(0,0,555), green));
     world.add(make_shared<quad>(point3(0,0,0), vec3(0,555,0), vec3(0,0,555), red));
-    world.add(make_shared<quad>(point3(343, 554, 332), vec3(-130,0,0), vec3(0,0,-105), light));
+    auto light_hittable = make_shared<quad>(point3(343, 554, 332), vec3(-130,0,0), vec3(0,0,-105), light);
+    world.add(light_hittable);
     world.add(make_shared<quad>(point3(0,0,0), vec3(555,0,0), vec3(0,0,555), white));
     world.add(make_shared<quad>(point3(555,555,555), vec3(-555,0,0), vec3(0,0,-555), white));
     world.add(make_shared<quad>(point3(0,0,555), vec3(555,0,0), vec3(0,555,0), white));
@@ -252,8 +253,8 @@ void cornell_box(){
 
     cam.aspectRatio      = 1.0;
     cam.imgWidth       = 600;
-    cam.samplesPerPixel = 300;
-    cam.maxRayBounce         = 50;
+    cam.samplesPerPixel = 1000;
+    cam.maxRayBounce         = 100;
 
     auto skybox_tex = make_shared<solid_color_tex>(0.0,0.0,0.0);
     cam.skybox = skybox_tex;
@@ -266,13 +267,15 @@ void cornell_box(){
 
     cam.defocusAngle = 0;
 
-    cam.render(world);
-    /*cam.initialize();
-    ray r = cam.get_ray(300, 515);
+    cam.render(world, light_hittable);
+    /*
+    cam.initialize();
+    ray r = cam.get_ray(300, 300, 8, 8);
     hit_record hr;
     std::clog << "Sending Ray " << r << std::endl;
-    std::clog << "Final Ray color is " << cam.ray_color(r, world, 50) << std::endl; */
-
+    std::clog << "Final Ray color is " << cam.ray_color(r, world, 50, light_hittable) << std::endl; 
+    */
+    
 }
 
 
@@ -318,7 +321,7 @@ void fognell_box(){
 
     cam.defocusAngle = 0;
 
-    cam.render(world);
+    cam.render(world, nullptr);
     /*cam.initialize();
     ray r = cam.get_ray(300, 515);
     hit_record hr;
@@ -399,7 +402,7 @@ void final_scene(int image_width, int samples_per_pixel, int max_depth) {
 
     cam.defocusAngle = 0;
 
-    cam.render(world);
+    cam.render(world, nullptr);
 }
 
 

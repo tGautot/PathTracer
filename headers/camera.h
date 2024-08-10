@@ -23,7 +23,7 @@ public:
     double strat_factor_u = -1, strat_factor_v = -1;
     int strat_count_u, strat_count_v;
 
-
+    
     shared_ptr<texture> skybox;
 
     point3 lookfrom = point3(0,0,0);
@@ -31,11 +31,10 @@ public:
     vec3 vup = vec3(0,1,0);
 
     camera(){
-
     }
 
 
-    void render(const hittable& world){
+    void render(const hittable& world, shared_ptr<hittable> lights){
         initialize();
         std::clog << "Each pixel will be stratified into " << strat_count_u << "x" << strat_count_v <<std::endl;
         std::cout << "P3\n" << imgWidth << ' ' << imgHeight << "\n255\n";
@@ -48,7 +47,7 @@ public:
                     int ku = k % strat_count_u;
                     int kv = k / strat_count_u;
                     ray pixelRay = get_ray(i, j, ku, kv);
-                    totCol += ray_color(pixelRay, world, maxRayBounce);
+                    totCol += ray_color(pixelRay, world, maxRayBounce, lights);
                 }
                 write_color(std::cout, totCol/samplesPerPixel);
             }
@@ -127,7 +126,7 @@ public:
         return cameraPos +v[0]*defocusDiskU + v[1]*defocusDiskV; 
     }
 
-    color ray_color(const ray& r, const hittable& world, int bouncesLeft){
+    color ray_color(const ray& r, const hittable& world, int bouncesLeft, shared_ptr<hittable> lights){
         hit_record hr;
         if(bouncesLeft < 0){
             //std::clog << "RAY RAN OUT OF BOUNCES" << std::endl;
@@ -135,22 +134,35 @@ public:
         }
         if (world.hit(r, interval(0.001, infinity), hr)){
             ray scattered;
-            color attenuation;
             color emitted = hr.mat->emitted(hr.u, hr.v, hr.p);
-            double pdfval;
-            if(!hr.mat->scatter(r, hr, attenuation, scattered, pdfval)){
-                //std::clog << "RAY DIDNT SCATTER" << std::endl;
+            
+            scatter_rec sr;
+
+            if(!hr.mat->scatter(r, hr, sr)){
+                //std::clog << "Material doesnt scatter, returning emission " << emitted << std::endl;
                 return emitted;
             }
+            
 
-            cosine_hemisphere_pdf scatter_gen(hr.normal);
-            scattered = ray(hr.p, scatter_gen.generate(), hr.t);
-            pdfval = scatter_gen.val(scattered.direction());
+            auto combined_pdf = linear_comb_pdf<vec3>();
+            combined_pdf.add(sr.pdf_ptr, 1.0);
+            
+            if(lights != nullptr){
+                auto to_lights_pdf = make_shared<uniform_hittable_pdf>(lights, hr.p);
+                combined_pdf.add(to_lights_pdf, 1.0);
+            }
 
-            //std::clog << "hit color is " << attenuation << std::endl;
-            double mat_scatter_pdf = hr.mat->scatter_pdf(r, hr, scattered);
+            scattered = ray(hr.p, combined_pdf.generate(), hr.t);
+            double pdfval = combined_pdf.val(scattered.direction());
+            double mat_scatter_pdf = sr.pdf_ptr->val(scattered.direction());
+            color next_col = ray_color(scattered, world, bouncesLeft-1, lights);
+            
+            
+            //std::clog << "Genereated scatter ray is " << scattered << std::endl;
+            //std::clog << "Scatter col =  " << mat_scatter_pdf << "*" << sr.attenuation << "*" << next_col << "/" << pdfval << std::endl;
+            
 
-            color scatter_col = mat_scatter_pdf*attenuation*ray_color(scattered, world, bouncesLeft-1)/pdfval;
+            color scatter_col =  mat_scatter_pdf*sr.attenuation*next_col/pdfval;
             return emitted + scatter_col;
         }
             

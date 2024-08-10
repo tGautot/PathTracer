@@ -70,6 +70,7 @@ public:
         return hitLeft || hitRight;
     }
 
+
     aabb bounding_box() const override {
         return bbox;
     }

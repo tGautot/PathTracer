@@ -56,6 +56,25 @@ public:
 
         return true; 
     }
+
+    double area_facing(const vec3& direction) const override {
+        return PI * radius * radius;
+    }
+
+    point3 random_point() const override {
+        return center + radius*vec3::random_on_unit_sphere();
+    };
+
+    point3 random_point_facing(const vec3& direction) const override {
+        point3 p = random_point();
+        if(dot(p-center, direction) > 0) return -p;
+        return p;
+    }
+    
+
+    point3 random_point_towards(const point3& position) const override {
+        return random_point_facing(center-position);
+    }
     
     
     static void get_sphere_uv(const point3& p, double& u, double& v) {

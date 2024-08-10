@@ -4,7 +4,16 @@
 #include "common.h"
 #include "hittable.h"
 #include "texture.h"
+#include "pdf.h"
 
+struct scatter_rec {
+public:
+    color attenuation;
+    shared_ptr<pdf<vec3>> pdf_ptr;
+    bool skip_pdf;
+    ray skip_pdf_ray;
+    double scattered_solid_angle;
+};
 
 class material {
 public:
@@ -15,7 +24,7 @@ public:
         return color(0,0,0);
     }
 
-    virtual bool scatter(const ray& rayIn, hit_record& hr, color& attenuation, ray& rayOut, double& chosen_dir_pdf) const{
+    virtual bool scatter(const ray& rayIn, hit_record& hr, scatter_rec& sr) const{
         return false;
     }
 
@@ -27,25 +36,21 @@ public:
 
 class lambertian : public material {
 private:
-    shared_ptr<texture> albedo;
+    shared_ptr<texture> albedo; 
 
 public:
     lambertian(color  albedo): albedo(make_shared<solid_color_tex>(albedo)){}
     lambertian(shared_ptr<texture> tex): albedo(tex){}
 
-    bool scatter(const ray& rayIn, hit_record& hr, color& attenuation, ray& rayOut, double& chosen_dir_pdf) const override{
-        vec3 scatterDir = /*vec3::random_on_hemisphere(hr.normal);*/ hr.normal + vec3::random_on_unit_sphere();
-
-        if(scatterDir.near_zero())
-            scatterDir = hr.normal;
-
-        rayOut = ray(hr.p, scatterDir, rayIn.time());
-        attenuation = albedo->value(hr.u,hr.v,hr.p);
-
-        chosen_dir_pdf = scatter_pdf(rayIn, hr, rayOut);
-
+    bool scatter(const ray& rayIn, hit_record& hr, scatter_rec& sr) const override{       
+        sr.attenuation = albedo->value(hr.u,hr.v,hr.p);
+        sr.pdf_ptr = make_shared<cosine_hemisphere_pdf>(hr.normal);
+        sr.skip_pdf = false;
+        sr.scattered_solid_angle = PI/2.0;
         return true;
     }
+
+private:
 
     double scatter_pdf(const ray& ray_in, const hit_record& hr, const ray& ray_out) const {
         double cos_theta = dot(hr.normal, ray_out.direction().normalized());
@@ -65,15 +70,12 @@ private:
 public:
     metal(const color& albedo, double fuzz): albedo(albedo), fuzzFactor(fuzz) {}
 
-    bool scatter(const ray& rayIn, hit_record& hr, color& attenuation, ray& rayOut, double& chosen_dir_pdf) const override{
-        vec3 scatterDir = rayIn.direction().reflect(hr.normal).normalized();
-        scatterDir += fuzzFactor * vec3::random_in_hemisphere(scatterDir);
-
-
-        rayOut = ray(hr.p, scatterDir, rayIn.time());
-        attenuation = albedo;
-        chosen_dir_pdf = scatter_pdf(rayIn, hr, rayOut);
-        return dot(scatterDir, hr.normal) > 0;
+    bool scatter(const ray& rayIn, hit_record& hr, scatter_rec& sr) const override{
+        sr.attenuation = albedo;
+        sr.pdf_ptr = make_shared<cosine_hemisphere_pdf>(rayIn.direction().reflect(hr.normal).normalized(), fuzzFactor*PI/2.0);
+        sr.scattered_solid_angle = fuzzFactor*PI/2.0;
+        sr.skip_pdf = false;
+        return true;
     }
 
     double scatter_pdf(const ray& ray_in, const hit_record& hr, const ray& ray_out) const {
@@ -97,8 +99,8 @@ private:
 public:
     dielectric(double ri): refractiveIndex(ri) {}
 
-    bool scatter(const ray& rayIn, hit_record& hr, color& attenuation, ray& rayOut, double& chosen_dir_pdf) const override{
-        attenuation = color(1,1,1);
+    bool scatter(const ray& rayIn, hit_record& hr, scatter_rec& sr) const override{
+        sr.attenuation = color(1,1,1);
 
         double ri = hr.front_face ? 1/refractiveIndex : refractiveIndex;
         vec3 normalizedInDir = rayIn.direction().normalized();
@@ -115,9 +117,11 @@ public:
             scatterDir = refract(normalizedInDir, hr.normal, ri);
         }
 
+        sr.skip_pdf = true;
+        
+        sr.skip_pdf_ray = ray(hr.p, scatterDir, rayIn.time());
 
-        rayOut = ray(hr.p, scatterDir, rayIn.time());
-        chosen_dir_pdf = scatter_pdf(rayIn, hr, rayOut);
+        //chosen_dir_pdf = scatter_pdf(rayIn, hr, rayOut);
 
         return true;
     }    
@@ -168,10 +172,11 @@ class isotropic : public material {
     isotropic(const color& albedo) : tex(make_shared<solid_color_tex>(albedo)) {}
     isotropic(shared_ptr<texture> tex) : tex(tex) {}
 
-     bool scatter(const ray& rayIn, hit_record& hr, color& attenuation, ray& rayOut, double& chosen_dir_pdf) const override {
-        rayOut = ray(hr.p, vec3::random_on_unit_sphere(), rayIn.time());
-        attenuation = tex->value(hr.u, hr.v, hr.p);
-        chosen_dir_pdf = scatter_pdf(rayIn, hr, rayOut);
+     bool scatter(const ray& rayIn, hit_record& hr, scatter_rec& sr) const override {
+        sr.pdf_ptr = make_shared<uniform_sphere_pdf>();
+        sr.attenuation = tex->value(hr.u, hr.v, hr.p);
+        sr.skip_pdf = false;
+        sr.scattered_solid_angle = 4*PI/3.0;
         return true;
     }
 

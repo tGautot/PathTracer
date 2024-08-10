@@ -126,14 +126,32 @@ private:
     
     shared_ptr<material> mat;
     aabb bbox;
+    //! as of now, transforms can only rotate and translate, ie no change of area, but careful in the future
+    double area;
 
 
 public:
     quad(point3 q, vec3 u, vec3 v, shared_ptr<material> mat): planar_shape(q,u,v), mat(mat){     
+        area = n.length();
+        compute_bbox();
+    }
+
+    void compute_bbox() {
         aabb bbox1 = aabb(q, q+u+v);
         aabb bbox2 = aabb(q+u, q+v);
         bbox = aabb(bbox1, bbox2);
         bbox.expand(); // avoid problems with axis aligned quads
+    }
+
+    void translate(const vec3& offset)  {
+        planar_shape::translate(offset);
+        compute_bbox();
+    }
+
+    void rotate_around(double degX, double degY, double degZ, const point3& pivot) {
+        planar_shape::rotate_around(degX, degY, degZ, pivot);
+        compute_bbox();
+
     }
 
     bool hit(const ray& r, interval t_int, hit_record& hr) const override{
@@ -170,6 +188,26 @@ public:
         hr.u = alpha; hr.v = beta;
         return true;
     }
+
+
+    double area_facing(const vec3& direction) const override {
+        double cosine = std::fabs(dot(direction, normal)) / direction.length();
+        return cosine*area;
+    }
+
+    point3 random_point() const override {
+        return q + u*randDouble() + v*randDouble();
+    };
+
+    point3 random_point_facing(const vec3& direction) const override {
+        return random_point();
+    };
+
+    point3 random_point_towards(const point3& position) const override {
+        return random_point();
+    }
+
+
 
     aabb bounding_box() const override {
         return bbox;

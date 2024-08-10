@@ -10,6 +10,20 @@ public:
     virtual T generate() const = 0;
 };
 
+
+class uniform_sphere_pdf : public pdf<vec3>{
+public:
+
+    uniform_sphere_pdf(){}
+
+    double val(const vec3& x) const override {
+        return 1/(4*PI);
+    }
+    vec3 generate() const override {
+        return vec3::random_on_unit_sphere();
+    };
+};
+
 class uniform_hemisphere_pdf : public pdf<vec3>{
 private:
     vec3 n;
@@ -28,19 +42,49 @@ public:
 class cosine_hemisphere_pdf : public pdf<vec3>{
 private:
     vec3 n;
+    double angle = PI/2.0;
+    double sin_squared = 1.0;
 public:
 
     cosine_hemisphere_pdf(const vec3& normal) : n(normal){}
+    cosine_hemisphere_pdf(const vec3& normal, double angle) : n(normal), angle(angle){
+        double sine = std::sin(angle*PI/180.0);
+        sin_squared = sine*sine;
+    }
 
     double val(const vec3& x) const override {
         double cos_theta = dot(n, x.normalized());
-        return cos_theta < 0.0 ? 0.0 : cos_theta/PI;
+        return cos_theta < 0.0 ? 0.0 : cos_theta/(PI*sin_squared);
     }
     vec3 generate() const override {
-        vec3 v = n + vec3::random_on_unit_sphere();
+        vec3 v = n + vec3::random_on_unit_sphere() * (angle*2.0/PI);
         if(v.near_zero())
             v = n;
         return v;
+    };
+};
+
+class uniform_hittable_pdf : public pdf<vec3> {
+private:
+    shared_ptr<hittable> obj;
+    point3 orig;
+public:
+
+    uniform_hittable_pdf(shared_ptr<hittable> obj, const point3& p) : obj(obj), orig(p){}
+
+    double val(const vec3& dir) const override {
+        hit_record hr;
+        if(!obj->hit(ray(orig, dir), interval(0.001, infinity), hr))
+            return 0;
+    
+        double dist2 = hr.t*hr.t*dir.length_squared();
+        double proj_area = obj->area_facing(dir);
+        //std::clog << "UHPDF val is " << dist2 << "/" << proj_area  << " = " << dist2/proj_area << std::endl;
+        return dist2/proj_area;
+    }
+
+    vec3 generate() const override {
+        return obj->random_point_towards(orig) - orig;
     };
 };
 
@@ -49,35 +93,38 @@ public:
 #include <utility> // std::pair
 template<typename T>
 class linear_comb_pdf : public pdf<T> {
-    std::vector<std::pair<pdf<T>, double>> pdfs; // pdfs and their weight
+public:
+    std::vector<std::pair<shared_ptr<pdf<T>>, double>> pdfs; // pdfs and their weight
     std::vector<double> cumsum;
-    int size;
 
-    linear_comb_pdf():size(0){}
+    linear_comb_pdf(){}
 
-    void add(pdf<T> p, double w){
+    void add(shared_ptr<pdf<T>> p, double w){
         pdfs.push_back({p, w});
         double v = 0;
-        if(size > 0)
+        if(cumsum.size() > 0)
             v = cumsum.back();
         cumsum.push_back(v+w);
+
     }
 
     double val(const T& x) const override {
-        if(size == 0)
+        if(cumsum.size() == 0)
             exit(1);
         double pdfsum = 0.0;
         for(auto pdfpair : pdfs){
-            pdfsum += pdfpair.first.val() * pdfpair.second;
+            pdfsum += pdfpair.first->val(x) * pdfpair.second;
         }
         return pdfsum / cumsum.back();
         
     }
     T generate() const override {
         double v = randDouble() * cumsum.back();
+        //std::clog << "Cumulated pdf total weight is " << cumsum.back() << " and drew " << v << std::endl;
         auto itt = std::lower_bound(cumsum.begin(), cumsum.end(), v);
         int index = itt - cumsum.begin();
-        return pdfs[index].first.generate();
+        //std::clog << "Generating value from " << index << "th/" << pdfs.size() << " pdf " << std::endl;
+        return pdfs[index].first->generate();
     };
 
 };
