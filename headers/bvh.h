@@ -58,6 +58,10 @@ public:
         
     }
 
+    void commit_transform(){
+        // TODO
+    }
+
     bool hit(const ray& r, interval ray_t, hit_record& hr) const override {
 
         if(!bbox.hit(r, ray_t)){

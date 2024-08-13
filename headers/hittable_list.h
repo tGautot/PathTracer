@@ -17,6 +17,16 @@ public:
     hittable_list(){}
     hittable_list(shared_ptr<hittable> obj) {add(obj);}
 
+
+    void commit_transform() override{
+#ifdef SIMPLE_DEBUG
+        std::clog << "Committed list transform" << std::endl;
+#endif
+        for(auto obj : objs){
+            obj->commit_transform();
+        }
+    };
+
     void clear(){ objs.clear(); bbox = aabb(); }
     void add(shared_ptr<hittable> obj){
         objs.push_back(obj);
@@ -33,6 +43,7 @@ public:
                 hitAnything = true;
                 workingInterval.max =tmpRec.t;
                 hr = tmpRec;
+                hr.target = obj;
             }
         }
 
@@ -42,31 +53,7 @@ public:
 
     // TODO perhaps take normal into account to know what ovjects are actually seen
 
-    double pdf_value(const point3& origin, const vec3& direction) const {
-        int index = rand_int(0, objs.size());
-        return objs[index]->pdf_value(origin, direction) * objs[index]->area_facing(direction) / area_facing(direction);
-    }
-
-    double area_facing(const vec3& direction) const { // returns the area projected according to the direction
-        double sum = 0;
-        for(auto obj : objs)
-            sum += obj->area_facing(direction);
-        return sum;
-    }
-
-    point3 random_point() const {
-        int index = rand_int(0, objs.size());
-        return objs[index]->random_point();
-    }
-
-    point3 random_point_towards(const point3& position) const  {
-        int index = rand_int(0, objs.size());
-        return objs[index]->random_point_towards(position);
-    }
-    point3 random_point_facing(const vec3& direction) const {
-        int index = rand_int(0, objs.size());
-        return objs[index]->random_point_facing(direction);
-    }
+    
 
     aabb bounding_box() const override {
         return bbox;

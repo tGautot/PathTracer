@@ -57,23 +57,40 @@ public:
         return true; 
     }
 
-    double area_facing(const vec3& direction) const override {
-        return PI * radius * radius;
+    void commit_transform(){
+        
+    }
+
+    virtual double pdf_value(const point3& origin, const vec3& direction) const {
+        // This method only works for stationary spheres.
+
+        hit_record rec;
+        if (!this->hit(ray(origin, direction), interval(0.001, infinity), rec))
+            return 0;
+
+        auto cos_theta_max = std::sqrt(1 - radius*radius/(center - origin).length_squared());
+        auto solid_angle = 2*PI*(1-cos_theta_max);
+
+        return  1 / solid_angle;
+    }
+
+    double get_area() const override {
+        return 4*PI*radius*radius*radius/3.0;
+    }
+
+    bool is_facing(const vec3& dir) const override {
+        return true;
     }
 
     point3 random_point() const override {
         return center + radius*vec3::random_on_unit_sphere();
-    };
-
-    point3 random_point_facing(const vec3& direction) const override {
-        point3 p = random_point();
-        if(dot(p-center, direction) > 0) return -p;
-        return p;
     }
     
 
     point3 random_point_towards(const point3& position) const override {
-        return random_point_facing(center-position);
+        point3 p = random_point();
+        if(dot(p-center, center-position) > 0) return -p;
+        return p;
     }
     
     

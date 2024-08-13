@@ -17,8 +17,12 @@ protected:
     
     vec3 normal;
 
+    double area;
+
     double D;
     vec3 w;
+
+    bool only_normal_face = false;
 
 public:
 
@@ -30,7 +34,29 @@ public:
         w = n / dot(n,n);
     }
 
-    void translate(const vec3& offset)  {
+    planar_shape(point3 q, vec3 uvec, vec3 vvec, bool single_face): planar_shape(q, uvec, vvec){
+        only_normal_face = single_face;
+    }
+
+    void set_single_face(bool b){
+        only_normal_face = b;
+    }
+
+    void commit_transform() override{
+#ifdef SIMPLE_DEBUG
+        std::clog << "Committed sahpe2d transform" << std::endl;
+#endif
+        D = dot(q, normal);
+        w = n / dot(n,n);
+    }
+
+
+    bool is_facing(const vec3& dir) const {
+        return !only_normal_face || (dot(dir, n) < -EPSILON);
+    }
+    
+
+    /*void translate(const vec3& offset)  {
         transform::translate(offset);
         D = dot(q, normal);
     }
@@ -41,12 +67,26 @@ public:
         
         // Should not be needed, but might be worth putting it in when debugging
         // normal = n.normalized();
-    }
+    }*/
 
 
 
     void planar_coordinates(const point3& p, double* alpha, double* beta) const {
         by_vector_formula(p, alpha, beta);
+    }
+
+    double pdf_value(const point3& orig, const vec3& dir){
+        hit_record hr;
+        if(!hit(ray(orig, dir), interval(0.001, infinity), hr))
+            return 0;
+    
+        double dist2 = hr.t*hr.t*dir.length_squared();
+        double dt = dot(dir, normal);
+        if(only_normal_face && dt > 0) return 0;
+        double cosine = dt / dir.length();
+        double proj_area = cosine*area;
+        //std::clog << "UHPDF val is " << dist2 << "/" << proj_area  << " = " << dist2/proj_area << std::endl;
+        return dist2/proj_area;
     }
 
     bool ray_plane_intersection(const ray& r, double* hitTime) const{
@@ -55,7 +95,8 @@ public:
 
         // if only want to render fronface, want nd negative only
         if(std::fabs(nd) <= EPSILON) return false;
-        
+        if(only_normal_face && nd >= -EPSILON) return false;
+
         double npq = D - dot(normal, r.origin());
         //std::clog << "Computing intersection time from " << npq << "/" << nd << std::endl;
         double tm  = npq/nd;
@@ -126,12 +167,20 @@ private:
     
     shared_ptr<material> mat;
     aabb bbox;
-    //! as of now, transforms can only rotate and translate, ie no change of area, but careful in the future
-    double area;
 
 
 public:
-    quad(point3 q, vec3 u, vec3 v, shared_ptr<material> mat): planar_shape(q,u,v), mat(mat){     
+    quad(point3 q, vec3 u, vec3 v, shared_ptr<material> mat): planar_shape(q,u,v), mat(mat){         
+    }
+
+    quad(point3 q, vec3 u, vec3 v, shared_ptr<material> mat, bool single_face): planar_shape(q,u,v, single_face), mat(mat){         
+    }
+
+    void commit_transform() override {
+        planar_shape::commit_transform();
+//#ifdef SIMPLE_DEBUG
+        std::clog << "Committed quad transform" << std::endl;
+//#endif
         area = n.length();
         compute_bbox();
     }
@@ -143,7 +192,7 @@ public:
         bbox.expand(); // avoid problems with axis aligned quads
     }
 
-    void translate(const vec3& offset)  {
+    /*void translate(const vec3& offset)  {
         planar_shape::translate(offset);
         compute_bbox();
     }
@@ -152,7 +201,7 @@ public:
         planar_shape::rotate_around(degX, degY, degZ, pivot);
         compute_bbox();
 
-    }
+    }*/
 
     bool hit(const ray& r, interval t_int, hit_record& hr) const override{
         //std::clog << "Checking for hit with quat at " << q << ", normal is " << normal << std::endl;
@@ -189,25 +238,17 @@ public:
         return true;
     }
 
-
-    double area_facing(const vec3& direction) const override {
-        double cosine = std::fabs(dot(direction, normal)) / direction.length();
-        return cosine*area;
-    }
-
     point3 random_point() const override {
         return q + u*randDouble() + v*randDouble();
-    };
-
-    point3 random_point_facing(const vec3& direction) const override {
-        return random_point();
     };
 
     point3 random_point_towards(const point3& position) const override {
         return random_point();
     }
 
-
+    double get_area() const {
+        return area;
+    }
 
     aabb bounding_box() const override {
         return bbox;

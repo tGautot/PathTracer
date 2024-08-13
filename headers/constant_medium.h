@@ -21,6 +21,12 @@ public:
         phase_func(make_shared<isotropic>(albedo))
     {}
 
+
+    void commit_transform() override {
+      std::clog << "Committed constant medium transform" << std::endl;
+      boundary->commit_transform();
+    }
+
     bool hit(const ray& r, interval t_int, hit_record& hr) const override {
         hit_record hr1, hr2;
         

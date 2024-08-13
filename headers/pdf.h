@@ -73,14 +73,7 @@ public:
     uniform_hittable_pdf(shared_ptr<hittable> obj, const point3& p) : obj(obj), orig(p){}
 
     double val(const vec3& dir) const override {
-        hit_record hr;
-        if(!obj->hit(ray(orig, dir), interval(0.001, infinity), hr))
-            return 0;
-    
-        double dist2 = hr.t*hr.t*dir.length_squared();
-        double proj_area = obj->area_facing(dir);
-        //std::clog << "UHPDF val is " << dist2 << "/" << proj_area  << " = " << dist2/proj_area << std::endl;
-        return dist2/proj_area;
+        return obj->pdf_value(orig, dir);
     }
 
     vec3 generate() const override {
@@ -120,10 +113,13 @@ public:
     }
     T generate() const override {
         double v = randDouble() * cumsum.back();
-        //std::clog << "Cumulated pdf total weight is " << cumsum.back() << " and drew " << v << std::endl;
+        
         auto itt = std::lower_bound(cumsum.begin(), cumsum.end(), v);
         int index = itt - cumsum.begin();
-        //std::clog << "Generating value from " << index << "th/" << pdfs.size() << " pdf " << std::endl;
+#ifdef SIMPLE_DEBUG
+        std::clog << "Cumulated pdf total weight is " << cumsum.back() << " and drew " << v << std::endl;
+        std::clog << "Generating value from " << index << "th/" << pdfs.size() << " pdf " << std::endl;
+#endif
         return pdfs[index].first->generate();
     };
 
