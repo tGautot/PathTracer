@@ -46,8 +46,10 @@ public:
 #ifdef SIMPLE_DEBUG
         std::clog << "Committed sahpe2d transform" << std::endl;
 #endif
+        normal = n.normalized();
         D = dot(q, normal);
         w = n / dot(n,n);
+    
     }
 
 
