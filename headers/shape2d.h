@@ -75,7 +75,10 @@ public:
         by_vector_formula(p, alpha, beta);
     }
 
-    double pdf_value(const point3& orig, const vec3& dir){
+    double pdf_value(const point3& orig, const vec3& dir) const override{
+
+        //std::clog << "Computing PDF val for quad with area " << area << std::endl;
+
         hit_record hr;
         if(!hit(ray(orig, dir), interval(0.001, infinity), hr))
             return 0;
@@ -83,7 +86,7 @@ public:
         double dist2 = hr.t*hr.t*dir.length_squared();
         double dt = dot(dir, normal);
         if(only_normal_face && dt > 0) return 0;
-        double cosine = dt / dir.length();
+        double cosine = std::fabs(dt) / dir.length();
         double proj_area = cosine*area;
         //std::clog << "UHPDF val is " << dist2 << "/" << proj_area  << " = " << dist2/proj_area << std::endl;
         return dist2/proj_area;
@@ -178,9 +181,9 @@ public:
 
     void commit_transform() override {
         planar_shape::commit_transform();
-//#ifdef SIMPLE_DEBUG
+#ifdef SIMPLE_DEBUG
         std::clog << "Committed quad transform" << std::endl;
-//#endif
+#endif
         area = n.length();
         compute_bbox();
     }

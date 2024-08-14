@@ -273,7 +273,7 @@ void cornell_box(){
 #else
     cam.initialize();
     world.commit_transform();
-    ray r = cam.get_ray(300, 300, 8, 8);
+    ray r = cam.get_ray(300, 375, 8, 8);
     hit_record hr;
     std::clog << "Sending Ray " << r << std::endl;
     std::clog << "Final Ray color is " << cam.ray_color(r, world, 50, light_hittable) << std::endl; 

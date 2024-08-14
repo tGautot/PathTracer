@@ -57,6 +57,7 @@ public:
         return cos_theta < 0.0 ? 0.0 : cos_theta/(PI*sin_squared);
     }
     vec3 generate() const override {
+        //std::clog << "Generating direciton via cosine pdf of angle " << angle << std::endl;
         vec3 v = n + vec3::random_on_unit_sphere() * (angle*2.0/PI);
         if(v.near_zero())
             v = n;

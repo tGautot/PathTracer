@@ -137,7 +137,10 @@ public:
             return color(0,0,0);
         }
         if (world.hit(r, interval(0.001, infinity), hr)){
-            ray scattered;
+#ifdef SIMPLE_DEBUG
+                std::clog << "Ray hit at point " << hr.p << " after " << hr.t << " timeunits" << std::endl;
+#endif
+
             color emitted = hr.mat->emitted(hr.u, hr.v, hr.p);
             
             scatter_rec sr;
@@ -155,16 +158,20 @@ public:
             
             if(lights != nullptr){
                 auto to_lights_pdf = make_shared<uniform_hittable_pdf>(lights, hr.p);
-                combined_pdf.add(to_lights_pdf, 1.0);
+                combined_pdf.add(to_lights_pdf, 0.0);
             }
 
-            scattered = ray(hr.p, combined_pdf.generate(), hr.t);
+            ray scattered = ray(hr.p, combined_pdf.generate(), hr.t);
+#ifdef SIMPLE_DEBUG
+            std::clog << "Genereated scatter ray is " << scattered << std::endl;
+#endif
+
             double pdfval = combined_pdf.val(scattered.direction());
             double mat_scatter_pdf = sr.pdf_ptr->val(scattered.direction());
             color next_col = ray_color(scattered, world, bouncesLeft-1, lights);
             
 #ifdef SIMPLE_DEBUG
-            std::clog << "Genereated scatter ray is " << scattered << std::endl;
+            
             std::clog << "Scatter col =  " << mat_scatter_pdf << "*" << sr.attenuation << "*" << next_col << "/" << pdfval << std::endl;
 #endif
 
