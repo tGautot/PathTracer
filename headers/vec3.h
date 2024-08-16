@@ -142,6 +142,14 @@ inline bool operator==(const vec3& v1, const vec3& v2){
     return std::fabs(v1.x() - v2.x()) < EPSILON && std::fabs(v1.y() - v2.y()) < EPSILON && std::fabs(v1.z() - v2.z()) < EPSILON;
 }
 
+inline bool operator!=(const vec3& v1, const vec3& v2){
+    return !(v1 == v2);
+}
+
+inline bool operator>(const vec3& v1, double d){
+    return v1.x() > d || v1.y() > d || v1.z() > d;
+}
+
 inline vec3 project(const vec3& v, const vec3& onto){
     return onto * (dot(v, onto) / onto.length_squared());
 }

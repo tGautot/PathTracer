@@ -52,6 +52,10 @@ public:
     
     }
 
+    vec3 get_normal(){
+        return normal;
+    }
+
 
     bool is_facing(const vec3& dir) const {
         return !only_normal_face || (dot(dir, n) < -EPSILON);

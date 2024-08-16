@@ -41,35 +41,13 @@ public:
     }
 
     void build_faces(){
-        add(make_shared<quad>(min,  dx,  dy, mat, true)); // back
-        add(make_shared<quad>(min,  dz,  dx, mat, true)); // bottom
-        add(make_shared<quad>(min,  dy,  dz, mat, true)); // left
-        add(make_shared<quad>(max, -dy, -dx, mat, true)); // front
-        add(make_shared<quad>(max, -dz, -dy, mat, true)); // right
-        add(make_shared<quad>(max, -dx, -dz, mat, true)); // top
+        add(make_shared<quad>(min,  dy,  dx, mat, true)); // back
+        add(make_shared<quad>(min,  dx,  dz, mat, true)); // bottom
+        add(make_shared<quad>(min,  dz,  dy, mat, true)); // left
+        add(make_shared<quad>(max, -dx, -dy, mat, true)); // front
+        add(make_shared<quad>(max, -dy, -dz, mat, true)); // right
+        add(make_shared<quad>(max, -dz, -dx, mat, true)); // top
     }
-
-    /*void translate(const vec3& offset)  {
-        transform::translate(offset);
-        min = center - (dx + dy + dz)/2;
-        max = min + dx + dy + dz;
-        clear(); build_faces();
-    }
-
-    void rotate_around(double degX, double degY, double degZ, const point3& pivot) {
-        //std::clog << "BOX BEFORE ROTATE " << std::endl;
-        //std::clog << "Address of box dx is " << std::addressof(dx[0]) << std::endl;
-        //print();
-
-        transform::rotate_around(degX, degY, degZ, pivot);
-        min = center - (dx + dy + dz)/2;;
-        max = min + dx + dy + dz;
-        clear(); build_faces();
-        
-        //std::clog << "BOX AFTER ROTATE " << std::endl;
-        //std::clog << "Address of box dx is " << std::addressof(dx[0]) << std::endl;
-        //print();
-    }*/
 
    double pdf_value(const point3& origin, const vec3& direction) const {
         //Generate uniformly by surface over all 6 planes

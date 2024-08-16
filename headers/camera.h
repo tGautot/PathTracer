@@ -152,30 +152,53 @@ public:
                 return emitted;
             }
             
+            if(sr.skip_pdf){
+                return emitted + sr.attenuation * ray_color(sr.skip_pdf_ray, world, bouncesLeft-1, lights);
+            }
+
 
             auto combined_pdf = linear_comb_pdf<vec3>();
             combined_pdf.add(sr.pdf_ptr, 1.0);
             
             if(lights != nullptr){
                 auto to_lights_pdf = make_shared<uniform_hittable_pdf>(lights, hr.p);
-                combined_pdf.add(to_lights_pdf, 0.0);
+                combined_pdf.add(to_lights_pdf, 1.0);
+                //combined_pdf.add(sr.pdf_ptr, bouncesLeft == 1 ? 0.0 : 1.0);
+            } 
+
+            double pdfval = 0; ray scattered;
+            while(pdfval < EPSILON){
+                scattered = ray(hr.p, combined_pdf.generate(), hr.t);
+                pdfval = combined_pdf.val(scattered.direction());
             }
 
-            ray scattered = ray(hr.p, combined_pdf.generate(), hr.t);
 #ifdef SIMPLE_DEBUG
             std::clog << "Genereated scatter ray is " << scattered << std::endl;
 #endif
 
-            double pdfval = combined_pdf.val(scattered.direction());
             double mat_scatter_pdf = sr.pdf_ptr->val(scattered.direction());
             color next_col = ray_color(scattered, world, bouncesLeft-1, lights);
             
 #ifdef SIMPLE_DEBUG
-            
             std::clog << "Scatter col =  " << mat_scatter_pdf << "*" << sr.attenuation << "*" << next_col << "/" << pdfval << std::endl;
+            
 #endif
 
             color scatter_col =  mat_scatter_pdf*sr.attenuation*next_col/pdfval;
+            
+            /*if(scatter_col > 1000){
+                std::clog << "Genereated scatter ray is " << scattered << std::endl;
+
+                std::clog << "Scatter col =  " << mat_scatter_pdf << "*" << sr.attenuation << "*" << next_col << "/" << pdfval << std::endl;
+                std::clog << "Gives " << scatter_col << std::endl;
+                exit(1);
+            }*/
+            if(scatter_col > samplesPerPixel/10){ // Sample becomes too big for the average (supress outlier)
+                // For the math to be exact, we should reduce by one the divider of the average
+                // sum / (N-1)
+                // with N big enough this doesnt really matter
+                scatter_col= color(0,0,0);
+            }
             return emitted + scatter_col;
         }
 

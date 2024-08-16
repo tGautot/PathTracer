@@ -1,5 +1,5 @@
 
-CFLAGS=-g -fopenmp -DSIMPLE_DEBUG
+CFLAGS=-g -fopenmp
 INCLUDES=-Iheaders -Iexternal
 
 clear:
