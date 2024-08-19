@@ -78,3 +78,7 @@ vec3 vec3::reflect(const vec3& nrml) const {
 std::ostream& operator<<(std::ostream& out, const vec3& r){
     return out << "["<< r.x() << "," << r.y() << "," << r.z() << "]";   
 }
+
+void write_vector(std::ostream& out, const vec3& v){
+    out << v.x() << ' ' << v.y() << ' ' << v.z() << '\n';
+}

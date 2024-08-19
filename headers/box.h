@@ -12,10 +12,11 @@ private:
     vec3 &dx= get_basis(0), &dy= get_basis(1), &dz= get_basis(2);
     point3 min, max;
     shared_ptr<material> mat;
+    bool see_through;
     
 
 public:
-    box(const point3& a, const point3& b, shared_ptr<material> mat): transform(), mat(mat){
+    box(const point3& a, const point3& b, shared_ptr<material> mat, bool see_through = false): transform(), mat(mat), see_through(see_through){
 
         // Construct the two opposite vertices with the minimum and maximum coordinates.
         min = point3(std::fmin(a.x(),b.x()), std::fmin(a.y(),b.y()), std::fmin(a.z(),b.z()));
@@ -41,12 +42,12 @@ public:
     }
 
     void build_faces(){
-        add(make_shared<quad>(min,  dy,  dx, mat, true)); // back
-        add(make_shared<quad>(min,  dx,  dz, mat, true)); // bottom
-        add(make_shared<quad>(min,  dz,  dy, mat, true)); // left
-        add(make_shared<quad>(max, -dx, -dy, mat, true)); // front
-        add(make_shared<quad>(max, -dy, -dz, mat, true)); // right
-        add(make_shared<quad>(max, -dz, -dx, mat, true)); // top
+        add(make_shared<quad>(min,  dx,  dz, mat, !see_through)); // bottom
+        add(make_shared<quad>(min,  dz,  dy, mat, !see_through)); // left
+        add(make_shared<quad>(min,  dy,  dx, mat, !see_through)); // back
+        add(make_shared<quad>(max, -dx, -dy, mat, !see_through)); // front
+        add(make_shared<quad>(max, -dy, -dz, mat, !see_through)); // right
+        add(make_shared<quad>(max, -dz, -dx, mat, !see_through)); // top
     }
 
    double pdf_value(const point3& origin, const vec3& direction) const {

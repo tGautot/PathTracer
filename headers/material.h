@@ -10,8 +10,8 @@ struct scatter_rec {
 public:
     color attenuation;
     shared_ptr<pdf<vec3>> pdf_ptr;
-    bool skip_pdf;
-    ray skip_pdf_ray;
+    //bool skip_pdf;
+    //ray skip_pdf_ray;
     double scattered_solid_angle;
 };
 
@@ -45,7 +45,6 @@ public:
     bool scatter(const ray& rayIn, hit_record& hr, scatter_rec& sr) const override{       
         sr.attenuation = albedo->value(hr.u,hr.v,hr.p);
         sr.pdf_ptr = make_shared<cosine_hemisphere_pdf>(hr.normal);
-        sr.skip_pdf = false;
         sr.scattered_solid_angle = PI/2.0;
         return true;
     }
@@ -61,6 +60,31 @@ private:
 
 };
 
+class transparent : public material {
+private:
+    shared_ptr<texture> albedo; 
+
+public:
+    transparent(color  albedo): albedo(make_shared<solid_color_tex>(albedo)){}
+    transparent(shared_ptr<texture> tex): albedo(tex){}
+
+    bool scatter(const ray& rayIn, hit_record& hr, scatter_rec& sr) const override{       
+        sr.attenuation = albedo->value(hr.u,hr.v,hr.p);
+        sr.pdf_ptr = make_shared<point_pdf<vec3>>(rayIn.direction());
+        sr.scattered_solid_angle = 0;
+        return true;
+    }
+
+private:
+
+    double scatter_pdf(const ray& ray_in, const hit_record& hr, const ray& ray_out) const {
+        if(ray_in.direction().normalized() == ray_out.direction().normalized())
+            return 1.0;
+        return 0.0;
+    }
+
+};
+
 
 class metal : public material {
 private:
@@ -72,9 +96,13 @@ public:
 
     bool scatter(const ray& rayIn, hit_record& hr, scatter_rec& sr) const override{
         sr.attenuation = albedo;
-        sr.pdf_ptr = make_shared<cosine_hemisphere_pdf>(rayIn.direction().reflect(hr.normal).normalized(), fuzzFactor*PI/2.0);
-        sr.scattered_solid_angle = fuzzFactor*PI/2.0;
-        sr.skip_pdf = false;
+        if(fuzzFactor > 0.0001){
+            sr.pdf_ptr = make_shared<cosine_hemisphere_pdf>(rayIn.direction().reflect(hr.normal).normalized(), fuzzFactor*PI/2.0);
+            sr.scattered_solid_angle = fuzzFactor*PI/2.0;
+        } else {
+            sr.pdf_ptr = make_shared<point_pdf<vec3>>(rayIn.direction().reflect(hr.normal).normalized());
+            sr.scattered_solid_angle = 0;
+        }
         return true;
     }
 
@@ -108,20 +136,18 @@ public:
         double cosTheta = fmin(dot(-normalizedInDir, hr.normal), 1);
         double sinTheta = sqrt(1.0-cosTheta*cosTheta);
         
-        bool shouldReflect = ri*sinTheta > 1.0 || reflectance(cosTheta, ri) > randDouble();
 
-        vec3 scatterDir;
-        if(shouldReflect){
-            scatterDir = reflect(rayIn.direction(), hr.normal);
-        } else {
-            scatterDir = refract(normalizedInDir, hr.normal, ri);
-        }
+        double reflectProb = 1.0;
+        if(ri*sinTheta < 1.0) reflectProb = reflectance(cosTheta, ri);
 
-        sr.skip_pdf = true;
+        vec3 reflectRay = reflect(rayIn.direction(), hr.normal);
+        vec3 refractRay = refract(normalizedInDir, hr.normal, ri);
         
-        sr.skip_pdf_ray = ray(hr.p, scatterDir, rayIn.time());
+        shared_ptr<pdf<vec3>> pdff = make_shared<binary_pdf<vec3>>(reflectRay, refractRay, reflectProb);
+        
+        sr.pdf_ptr = pdff;
+        sr.scattered_solid_angle = 0;
 
-        //chosen_dir_pdf = scatter_pdf(rayIn, hr, rayOut);
 
         return true;
     }    
@@ -175,7 +201,6 @@ class isotropic : public material {
      bool scatter(const ray& rayIn, hit_record& hr, scatter_rec& sr) const override {
         sr.pdf_ptr = make_shared<uniform_sphere_pdf>();
         sr.attenuation = tex->value(hr.u, hr.v, hr.p);
-        sr.skip_pdf = false;
         sr.scattered_solid_angle = 4*PI/3.0;
         return true;
     }

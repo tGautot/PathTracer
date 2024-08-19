@@ -83,6 +83,50 @@ public:
 };
 
 
+template<typename T>
+class point_pdf : public pdf<T> {
+private:
+    T p;
+    
+public:
+    point_pdf(T p): p(p){}
+
+    double val(const T& v) const override {
+        if(v == p) return 1.0;
+        return 0;
+    }
+
+    T generate() const override {
+        return p;
+    };
+
+
+};
+
+template<typename T>
+class binary_pdf : public pdf<T> {
+private:
+    T v1, v2;
+    double p1;
+
+public:
+    binary_pdf(T v1, T v2, double p1): v1(v1), v2(v2), p1(p1){}
+
+    double val(const T& v) const override {
+        if(v == v1) return p1;
+        if(v == v2) return 1-p1;
+        return 0;
+    }
+
+    T generate() const override {
+        if(randDouble() < p1) return v1;
+        return v2;
+    };
+
+
+};
+
+
 #include <vector>
 #include <utility> // std::pair
 template<typename T>

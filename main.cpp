@@ -11,6 +11,9 @@
 #include "box.h"
 #include "constant_medium.h"
 
+#include <numeric>
+#include <vector>
+
 void complex_scene(){
     hittable_list world;
 
@@ -232,32 +235,32 @@ void cornell_box(){
     auto red   = make_shared<lambertian>(color(.65, .05, .05));
     auto white = make_shared<lambertian>(color(.73, .73, .73));
     auto green = make_shared<lambertian>(color(.12, .45, .15));
-    auto light = make_shared<emissive_mat>(color(15, 15, 15));
+    auto light = make_shared<emissive_mat>(color(15,15,15));
     auto alluminium = make_shared<metal>(color(1,1,1), 0.0);
 
-    world.add(make_shared<quad>(point3(555,0,0), vec3(0,555,0), vec3(0,0,555), green));
-    world.add(make_shared<quad>(point3(0,0,0), vec3(0,555,0), vec3(0,0,555), red));
+    //world.add(make_shared<quad>(point3(555,0,0), vec3(0,555,0), vec3(0,0,555), green));
+    //world.add(make_shared<quad>(point3(0,0,0), vec3(0,555,0), vec3(0,0,555), red));
     auto light_hittable = make_shared<quad>(point3(343, 554, 332), vec3(-130,0,0), vec3(0,0,-105), light);
     world.add(light_hittable);
     world.add(make_shared<quad>(point3(0,0,0), vec3(555,0,0), vec3(0,0,555), white));
-    world.add(make_shared<quad>(point3(555,555,555), vec3(-555,0,0), vec3(0,0,-555), white));
-    world.add(make_shared<quad>(point3(0,0,555), vec3(555,0,0), vec3(0,555,0), white));
+    //world.add(make_shared<quad>(point3(555,555,555), vec3(-555,0,0), vec3(0,0,-555), white));
+    //world.add(make_shared<quad>(point3(0,0,555), vec3(555,0,0), vec3(0,555,0), white));
 
     auto box1 = make_shared<box>(point3(130, 0, 65), point3(295, 165, 230), white);
     box1->rotate(0,-15,0);
-    world.add(box1);
-    auto box2 = make_shared<box>(point3(265, 0, 295), point3(430, 330, 460), white);
+    //world.add(box1);
+    auto box2 = make_shared<box>(point3(265, 0, 295), point3(430, 330, 460), alluminium);
     box2->rotate(0,18,0);
-    world.add(box2);
+    //world.add(box2);
 
     camera cam;
 
     cam.aspectRatio      = 1.0;
     cam.imgWidth       = 600;
-    cam.samplesPerPixel = 200;
-    cam.maxRayBounce         = 12;
+    cam.samplesPerPixel = 300;
+    cam.maxRayBounce         = 25;
 
-    auto skybox_tex = make_shared<solid_color_tex>(0.0,0.0,0.0);
+    auto skybox_tex = make_shared<solid_color_tex>(0,0,0);
     cam.skybox = skybox_tex;
 
     cam.vertFOV     = 40;
@@ -270,10 +273,31 @@ void cornell_box(){
 
 #ifndef SIMPLE_DEBUG
     cam.render(world, light_hittable);
+    /*cam.initialize();
+    world.commit_transform();
+    ray r = cam.get_ray(300, 100, 8, 8);
+    hit_record hr;
+    
+
+    int rcount = 6000;
+    std::vector<color> v(rcount);
+    for(int i = 0; i < rcount; i++){
+        v[i] = cam.ray_color(r, world, 50, light_hittable);
+        write_vector(std::cout, v[i]);
+    }
+
+    color sum = std::accumulate(v.begin(), v.end(), color(0,0,0));
+    color mean = sum / v.size();
+
+    color sq_sum = std::inner_product(v.begin(), v.end(), v.begin(), color(0,0,0));
+    color stdev2 = sq_sum / v.size() - mean * mean;
+    color stdev = color(std::sqrt(stdev2.x()),std::sqrt(stdev2.y()),std::sqrt(stdev2.z()));
+
+    std::clog << "Got mean " << mean << " and std " << stdev << " giving error margin for 95% " << 4*stdev/(std::sqrt(rcount))*256 << std::endl;*/
 #else
     cam.initialize();
     world.commit_transform();
-    ray r = cam.get_ray(300, 300, 8, 8);
+    ray r = cam.get_ray(300, 100, 8, 8);
     hit_record hr;
     std::clog << "Sending Ray " << r << std::endl;
     std::clog << "Final Ray color is " << cam.ray_color(r, world, 50, light_hittable) << std::endl; 

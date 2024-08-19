@@ -60,20 +60,6 @@ public:
     bool is_facing(const vec3& dir) const {
         return !only_normal_face || (dot(dir, n) < -EPSILON);
     }
-    
-
-    /*void translate(const vec3& offset)  {
-        transform::translate(offset);
-        D = dot(q, normal);
-    }
-
-    void rotate_around(double degX, double degY, double degZ, const point3& pivot) {
-        transform::rotate_around(degX, degY, degZ, pivot);
-        w = n / dot(n,n);
-        
-        // Should not be needed, but might be worth putting it in when debugging
-        // normal = n.normalized();
-    }*/
 
 
 
@@ -201,29 +187,14 @@ public:
         bbox.expand(); // avoid problems with axis aligned quads
     }
 
-    /*void translate(const vec3& offset)  {
-        planar_shape::translate(offset);
-        compute_bbox();
-    }
-
-    void rotate_around(double degX, double degY, double degZ, const point3& pivot) {
-        planar_shape::rotate_around(degX, degY, degZ, pivot);
-        compute_bbox();
-
-    }*/
-
     bool hit(const ray& r, interval t_int, hit_record& hr) const override{
-        //std::clog << "Checking for hit with quat at " << q << ", normal is " << normal << std::endl;
         double hitTime;
         if(!ray_plane_intersection(r, &hitTime)) return false;
         point3 hitPoint = r.at(hitTime);
-        //std::clog << "Found hit with plane at " << q << " at time " << hitTime << " hit pos is " << hitPoint << std::endl;
         
         if(!t_int.contains(hitTime)) return false;
         double ka, kb;
         planar_coordinates(hitPoint, &ka, &kb);
-        
-        //std::clog << "Planar coordinates are " << ka << ", " << kb << std::endl;
 
         if(!is_interior(ka, kb, hr)) return false;
 
@@ -231,9 +202,6 @@ public:
         hr.p = hitPoint;
         hr.mat = mat;
         hr.set_frontface_and_normal(r, normal);
-        
-
-        //std::clog << "Hit IN parallelogrom, normal: " << normal << ", ff: " << hr.front_face  << std::endl;
 
         return true;
     }
@@ -244,6 +212,89 @@ public:
         if(!oi.contains(alpha) || !oi.contains(beta)) return false;
 
         hr.u = alpha; hr.v = beta;
+        return true;
+    }
+
+    point3 random_point() const override {
+        return q + u*randDouble() + v*randDouble();
+    };
+
+    point3 random_point_towards(const point3& position) const override {
+        return random_point();
+    }
+
+    double get_area() const {
+        return area;
+    }
+
+    aabb bounding_box() const override {
+        return bbox;
+    }
+
+};
+
+
+class triangle : public planar_shape {
+private:
+
+    
+    shared_ptr<material> mat;
+    aabb bbox;
+
+
+public:
+    triangle(point3 q, vec3 u, vec3 v, shared_ptr<material> mat): planar_shape(q,u,v), mat(mat){         
+    }
+
+    triangle(point3 q, vec3 u, vec3 v, shared_ptr<material> mat, bool single_face): planar_shape(q,u,v, single_face), mat(mat){         
+    }
+
+    //triangle(point3 a, point3 b, point3 c, shared_ptr<material> mat): planar_shape(a,b-a,c-a), mat(mat){         
+    //}
+
+    void commit_transform() override {
+        planar_shape::commit_transform();
+#ifdef SIMPLE_DEBUG
+        std::clog << "Committed triangle transform" << std::endl;
+#endif
+        area = n.length()/2;
+        compute_bbox();
+    }
+
+    void compute_bbox() {
+        // TODO Verify if this is correct
+        aabb bbox1 = aabb(q, q+u);
+        aabb bbox2 = aabb(q, q+v);
+        bbox = aabb(bbox1, bbox2);
+        bbox.expand(); // avoid problems with axis aligned tris
+    }
+
+
+    bool hit(const ray& r, interval t_int, hit_record& hr) const override{
+        double hitTime;
+        if(!ray_plane_intersection(r, &hitTime)) return false;
+        point3 hitPoint = r.at(hitTime);
+        
+        if(!t_int.contains(hitTime)) return false;
+        double ka, kb;
+        planar_coordinates(hitPoint, &ka, &kb);
+
+        if(!is_interior(ka, kb, hr)) return false;
+
+        hr.t = hitTime;
+        hr.p = hitPoint;
+        hr.mat = mat;
+        hr.set_frontface_and_normal(r, normal);
+
+        return true;
+    }
+
+    bool is_interior(double alpha, double beta, hit_record& hr) const override {
+        interval oi = interval(0.0, 1.0);
+
+        if(!oi.contains(alpha+beta)) return false;
+
+        hr.u = alpha; hr.v = beta; hr.w = 1-alpha-beta;
         return true;
     }
 

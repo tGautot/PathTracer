@@ -12,7 +12,7 @@ public:
     point3 p;
     vec3 normal;
     double t;
-    double u, v;
+    double u, v, w;
     bool front_face;
     shared_ptr<material> mat;
     shared_ptr<hittable> target; // only filled when calling `hit` function on `hittable_list`

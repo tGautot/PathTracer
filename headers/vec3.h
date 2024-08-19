@@ -165,6 +165,8 @@ inline vec3 refract(const vec3& in, const vec3& nrml, double rri){
     return outParl + outPerp;
 }
 
+void write_vector(std::ostream& out, const vec3& v);
+
 using point3 = vec3;
 
 

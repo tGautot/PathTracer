@@ -9,6 +9,10 @@
 #include <memory>
 
 class camera{
+private:
+
+    double color_clamp_val;
+
 public:
 
     double aspectRatio = 1.0;
@@ -49,7 +53,13 @@ public:
                     int ku = k % strat_count_u;
                     int kv = k / strat_count_u;
                     ray pixelRay = get_ray(i, j, ku, kv);
-                    totCol += ray_color(pixelRay, world, maxRayBounce, lights);
+                    color sampled_col = ray_color(pixelRay, world, maxRayBounce, lights);
+                    /*if(sampled_col > color_clamp_val){
+                        sampled_col = color(std::fmin(sampled_col.x(), color_clamp_val),
+                                            std::fmin(sampled_col.y(), color_clamp_val),
+                                            std::fmin(sampled_col.z(), color_clamp_val));
+                    }*/
+                    totCol += sampled_col;
                 }
                 write_color(std::cout, totCol/samplesPerPixel);
             }
@@ -67,6 +77,7 @@ private:
     vec3 vpUpperLeft;
 
     vec3 stratified_pix_du, stratified_pix_dv;
+
 
 
 public:
@@ -107,6 +118,9 @@ public:
         double defocusRadius = focusDist * tan(degsToRads(defocusAngle/2));
         defocusDiskU = u * defocusRadius;
         defocusDiskV = v * defocusRadius;
+
+        color_clamp_val = samplesPerPixel/50;
+        std::clog << "Max sample color camp set to " << color_clamp_val << std::endl;
     }
 
     ray get_ray(int pix_i, int pix_j, int st_i, int st_j) const{
@@ -152,8 +166,8 @@ public:
                 return emitted;
             }
             
-            if(sr.skip_pdf){
-                return emitted + sr.attenuation * ray_color(sr.skip_pdf_ray, world, bouncesLeft-1, lights);
+            if(sr.scattered_solid_angle < 0.1){ // TODO FIND BETTER THRESHOLD 
+                return emitted + sr.attenuation * ray_color(ray(hr.p, sr.pdf_ptr->generate()), world, bouncesLeft-1, lights);
             }
 
 
@@ -186,19 +200,6 @@ public:
 
             color scatter_col =  mat_scatter_pdf*sr.attenuation*next_col/pdfval;
             
-            /*if(scatter_col > 1000){
-                std::clog << "Genereated scatter ray is " << scattered << std::endl;
-
-                std::clog << "Scatter col =  " << mat_scatter_pdf << "*" << sr.attenuation << "*" << next_col << "/" << pdfval << std::endl;
-                std::clog << "Gives " << scatter_col << std::endl;
-                exit(1);
-            }*/
-            if(scatter_col > samplesPerPixel/10){ // Sample becomes too big for the average (supress outlier)
-                // For the math to be exact, we should reduce by one the divider of the average
-                // sum / (N-1)
-                // with N big enough this doesnt really matter
-                scatter_col= color(0,0,0);
-            }
             return emitted + scatter_col;
         }
 
