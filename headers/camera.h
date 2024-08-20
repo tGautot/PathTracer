@@ -54,11 +54,11 @@ public:
                     int kv = k / strat_count_u;
                     ray pixelRay = get_ray(i, j, ku, kv);
                     color sampled_col = ray_color(pixelRay, world, maxRayBounce, lights);
-                    /*if(sampled_col > color_clamp_val){
+                    if(sampled_col > color_clamp_val){
                         sampled_col = color(std::fmin(sampled_col.x(), color_clamp_val),
                                             std::fmin(sampled_col.y(), color_clamp_val),
                                             std::fmin(sampled_col.z(), color_clamp_val));
-                    }*/
+                    }
                     totCol += sampled_col;
                 }
                 write_color(std::cout, totCol/samplesPerPixel);
